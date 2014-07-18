@@ -2,7 +2,10 @@ import sys
 import time
 import logging
 import xmlrpclib
+import datetime
 
+from .. import db
+from db.runlog import Observation
 from .. import log
 from ..utils.xmlrpc import RPCAble
 
@@ -36,11 +39,14 @@ NO  -- Log Failure
 class RunManager(RPCAble):
     IDLE_GRANULARITY = .1
     
-    def __init__(self, scheduler, telescope, slider, focuser):
+    def __init__(self, scheduler, telescope, slider, focuser, science_camera):
         self.scheduler = scheduler
         self.telescope = telescope
         self.slider = slider
         self.focuser = focuser
+        self.science_camera = science_camera
+        
+        self.session = db.Session()
 
         self.startup()
 
@@ -137,13 +143,52 @@ class RunManager(RPCAble):
         self._idle_while_busy(self.focuser)
 
         # TODO: Do some speckle imaging
+        # # Slew telescope by offset
+        # # Make initial guess of science camera exposure parameters
+
+        if self.science_camera.target_in_camera(): #placeholder
+            # # Set science camera exposure parameters
+
+            filename = self.science_camera.get_filename()
+            itime = self.science_camera.get_itime()
+            emgian = self.science_camera.get_emgain()
+            roi_height = self.science_camera.get_roi_height()
+            roi_width = self.science_camera.get_roi_width()
+            ra_deg, dec_deg = telescope.get_pos()
+
+            # Instantiating this will fail until we pass in the band for the
+            # observation (we also need the reference star filename and
+            # database id
+            obs = Observation(
+                filename = filename,
+                star_id = target.star_id,
+                datetime = datetime.datetime.now(),
+                emgain = emgain,
+                itime = itime,
+                requester = target.requester,
+                roi_width = roi_width,
+                roi_height = roi_height,
+                ra_deg = ra_deg,
+                dec_deg = dec_deg,
+                band = band
+                )
+
+            print """Saved obsevation in run log with filename {}""".format(filename)
+
+            self.session.add(obs)
+            self.session.commit()
+                    
+            del obs
+            
+            self.scheduler.target_success()
+
+        
 
         self.focuser.to_acquisition()
         self._idle_while_busy(self.focuser)
         
 
 
-        self.scheduler.target_success()
         
     def startup(self):
         """

@@ -1,0 +1,5 @@
+- Create science camera simulator with RPC methods like get_itime(),
+  get_emgain(), get_filename(), etc.
+
+- In Run Log, update the update function to add run log entries
+

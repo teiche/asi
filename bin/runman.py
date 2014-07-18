@@ -42,7 +42,14 @@ except socket.error:
 #focuser = asi.focuser.focusmax.FocusMaxFocuser()
 focuser = asi.focuser.simulator.SimulatorFocuser()
 
-rm = RunManager(scheduler, telescope, slider, focuser)
+try:
+    science_camera = asi.client.ScienceCamera()
+    logger.info("Connected to science camera: " + science_camera.name())
+except socket.error:
+    logger.critical("Could not connect to science camera")
+    sys.exit()
+
+rm = RunManager(scheduler, telescope, slider, focuser, science_camera)
 
 while 1:
     rm.update()

@@ -13,6 +13,7 @@ TABLE_NAME_MAP = {
 SCHEDULER_DEFAULT_ADDR = config.scheduler_addr
 TELESCOPE_DEFAULT_ADDR = config.telescope_addr
 SLIDER_DEFAULT_ADDR    = config.slider_addr
+SCIENCE_CAMERA_DEFAULT_ADDR = config.science_camera_addr
 
 """
 Scheduler needs some client side helper code:
@@ -51,4 +52,7 @@ def Telescope(addr=TELESCOPE_DEFAULT_ADDR):
 '''
 
 def Slider(addr=SLIDER_DEFAULT_ADDR):
+    return _make_xmlrpc_connection(addr)
+
+def ScienceCamera(addr=SCIENCE_CAMERA_DEFAULT_ADDR):
     return _make_xmlrpc_connection(addr)
