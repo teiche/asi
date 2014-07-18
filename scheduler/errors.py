@@ -1,0 +1,2 @@
+class NoObservableTargetsError(Exception):
+    pass

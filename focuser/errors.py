@@ -1,0 +1,2 @@
+class FocusMaxInternalError(Exception):
+    pass

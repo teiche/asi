@@ -1,0 +1,2 @@
+class SlewFailed(Exception):
+    pass
