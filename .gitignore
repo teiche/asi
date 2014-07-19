@@ -51,4 +51,8 @@ coverage.xml
 # Sphinx documentation
 docs/_build/
 
+# Mac-specific bookkeeping/organization files
 .DS_Store
+
+# Editor files
+*.swp
