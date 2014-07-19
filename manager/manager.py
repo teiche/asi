@@ -105,7 +105,7 @@ class RunManager(RPCAble):
         """
         logger.info("Requesting new target...")
         try:
-            target = self.scheduler.get_next_target()
+            target, band = self.scheduler.get_next_target()
 
         except xmlrpclib.Fault, e:
             # There are no observable targets
@@ -145,6 +145,8 @@ class RunManager(RPCAble):
         # TODO: Do some speckle imaging
         # # Slew telescope by offset
         # # Make initial guess of science camera exposure parameters
+        
+        successful_observation_ids = []
 
         if self.science_camera.target_in_camera(): #placeholder
             # # Set science camera exposure parameters
@@ -155,41 +157,54 @@ class RunManager(RPCAble):
             roi_height = self.science_camera.get_roi_height()
             roi_width = self.science_camera.get_roi_width()
             ra_deg, dec_deg = telescope.get_pos()
-
-            # Instantiating this will fail until we pass in the band for the
-            # observation (we also need the reference star filename and
-            # database id
-            obs = Observation(
-                filename = filename,
-                star_id = target.star_id,
-                datetime = datetime.datetime.now(),
-                emgain = emgain,
-                itime = itime,
-                requester = target.requester,
-                roi_width = roi_width,
-                roi_height = roi_height,
-                ra_deg = ra_deg,
-                dec_deg = dec_deg,
-                band = band
-                )
+            
+            if isinstance(target, DoubleStar):
+                obs = Observation(
+                    filename = filename,
+                    star_id = target.star_id,
+                    datetime = datetime.datetime.now(),
+                    emgain = emgain,
+                    itime = itime,
+                    requester = target.requester,
+                    roi_width = roi_width,
+                    roi_height = roi_height,
+                    ra_deg = ra_deg,
+                    dec_deg = dec_deg,
+                    band = band
+                    )
+            elif isinstance(target, ReferenceStar):
+                obs = Observation(
+                    ref_filename = filename,
+                    ref_star_id = target.star_id,
+                    datetime = datetime.datetime.now(),
+                    emgain = emgain,
+                    itime = itime,
+                    requester = target.requester,
+                    roi_width = roi_width,
+                    roi_height = roi_height,
+                    ra_deg = ra_deg,
+                    dec_deg = dec_deg,
+                    band = band
+                    )
+            else:
+                raise TypeError("Target is not a DoubleStar or a ReferenceStar")
 
             print """Saved obsevation in run log with filename {}""".format(filename)
 
             self.session.add(obs)
             self.session.commit()
-                    
+
+            successful_observation_ids.append(obs.id)
+
             del obs
             
-            self.scheduler.target_success()
+            self.scheduler.target_success(successful_observation_ids)
 
         
 
         self.focuser.to_acquisition()
         self._idle_while_busy(self.focuser)
-        
 
-
-        
     def startup(self):
         """
         Start observing
