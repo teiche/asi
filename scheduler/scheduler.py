@@ -36,21 +36,35 @@ class AbstractScheduler(RPCAble):
         # They are observed in the order contained in this list
         # After this list is exhausted, if any doubles were successfully observed then 
         # self.single is observed
+        # Each item in this list is a tuple of (double, band)
         self.double_queue = []
 
         # Once a double is observed, if the observation is successful it is moved from the 
         # double_queue to this list.  If it was unsuccessful, it is forgotten entirely.
         # This list is so the best single star can be recalculated if self.single can't be found
         # This list is only used after double_queue is exhausted AND self.single fails
+        # Each item in this list is also a tupe of (double, band)
         self.successful_doubles = []
 
         # The single to observe for the doubles in self.double_queue
+        # (single, band)
         self.single = None
 
         # This is the star we are currently observing
         self.current = None
 
         #self._xmlrpc_funcs = (self.get_next_target, self.target_failed, self.target_success)
+
+        # List of run log database ids of successful observations
+        # This will be used after all doubles in a group are observed to
+        # update their run log entries with the correct reference star
+        # filename and reference star id.
+        self.successful_observations = []
+
+        # Run log database id of successful reference star observation, to be
+        # used to get the filename of the FITS cube for that observation, and
+        # the reference star id. 
+        self.successful_single_observation = None
 
     def _get_next_target(self):
         """
@@ -76,12 +90,12 @@ class AbstractScheduler(RPCAble):
         Return the next target to observe as an RPC-serializable string, to be converted into
         an SQLAlchemy ORM object at the client side
         """
-        t = self._get_next_target()
+        t, band = self._get_next_target()
 
         db = t.__class__.__name__
         i = t.id
         
-        return (db, i)
+        return (db, i, band)
         
     @rpc_method
     def target_failed(self):
@@ -93,21 +107,45 @@ class AbstractScheduler(RPCAble):
         In the case of a double, it is simply skipped
         In the case of a single, a new single is found
         """
-        if isinstance(self.current, ReferenceStar):
+        if isinstance(self.current[0], ReferenceStar):
             self.single = self.get_next_single_star(self.successful_doubles)
 
     @rpc_method
-    def target_success(self):
+    def target_success(self, observation_ids = []):
         """
         The current target was a success
+
+        Takes a list of run log database ids of successful observations that
+        it will add to self.sucessful_observations
         """
-        if isinstance(self.current, DoubleStar):
+        if isinstance(self.current[0], DoubleStar):
             self.successful_doubles.append(self.current)
+            self.successful_observations.extend(observation_ids)
+        elif isinstance(self.current[0], SingleStar):
+            assert len(observation_ids) == 1, "There should only be one observation of the single star"
+            self.successful_single_obs = observation_ids[0]
 
     def _load_next_group(self):
         """
         Load the next group of doubles into the queue, then select a single star for them
+
+        Also update all the successful observations for the group we have just
+        observed to include the reference observation filename and reference
+        star id.
         """
+        single_id = self.single.id
+        single_obs = \
+        self.session.query(Observation).filter(Observation.id == self.successful_single_obs).one()
+        single_obs_filename = single_obs.ref_filename 
+
+        for observation_id in self.successful_observations:
+            obs = self.session.query(Observation).filter(Observation.id == observation_id).one()
+            obs.ref_id = single_id
+            obs.ref_filename = single_obs_filename
+            session.commit()
+    
+        self.successful_observations = []
+        self.successful_single_obs = None
         self.successful_doubles = []
         self.double_queue = self.get_next_double_group()
         self.single = self.get_next_single_star(self.double_queue)
@@ -122,10 +160,11 @@ class AbstractScheduler(RPCAble):
         
     def get_next_double_group(self):
         """
-        Call _get_next_target_group, extract all DoubleStars from the Target objects, 
+        Call _get_next_target_group, extract all DoubleStars and the band to
+        observe them in from the Target objects, 
         and return a new list, preserving order
         """
-        return [x.star for x in self._get_next_target_group()]
+        return [(x.star, x.band) for x in self._get_next_target_group()]
 
     def update(self):
         """
@@ -144,7 +183,7 @@ class AbstractScheduler(RPCAble):
             dec_dist = self.MAX_SINGLE_DIST_DEC
 
         print 'double', doubles
-        dbl = doubles[0]
+        dbl, band = doubles[0]
         ra_range = (dbl.ra_deg - ra_dist, dbl.ra_deg + ra_dist)
         dec_range = (dbl.dec_deg - dec_dist, dbl.dec_deg + dec_dist)
 
@@ -187,6 +226,7 @@ class AbstractScheduler(RPCAble):
         single = min(singles, key=functools.partial(astro.dist, dbl))
 
         return single
+        # TODO: In what band do we observe the single?
 
     @rpc_method
     def reset(self):
