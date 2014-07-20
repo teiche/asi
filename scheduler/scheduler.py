@@ -43,7 +43,7 @@ class AbstractScheduler(RPCAble):
         # double_queue to this list.  If it was unsuccessful, it is forgotten entirely.
         # This list is so the best single star can be recalculated if self.single can't be found
         # This list is only used after double_queue is exhausted AND self.single fails
-        # Each item in this list is also a tupe of (double, band)
+        # Each item in this list is also a tuple of (double, band)
         self.successful_doubles = []
 
         # The single to observe for the doubles in self.double_queue
@@ -68,7 +68,8 @@ class AbstractScheduler(RPCAble):
 
     def _get_next_target(self):
         """
-        Fetch and return the next target to observe, as a Django ORM object
+        Fetch and return the next target to observe, as a (SQLAlchemy ORM object,
+        band) tuple
         """
         if self.double_queue: # If there are still doubles in the queue
             self.current = self.double_queue.pop(0)
@@ -87,7 +88,7 @@ class AbstractScheduler(RPCAble):
     @rpc_method
     def get_next_target(self):
         """
-        Return the next target to observe as an RPC-serializable string, to be converted into
+        Return the next target to observe and the band as an RPC-serializable string, to be converted into
         an SQLAlchemy ORM object at the client side
         """
         t, band = self._get_next_target()
