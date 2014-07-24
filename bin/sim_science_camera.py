@@ -2,7 +2,7 @@ from SimpleXMLRPCServer import SimpleXMLRPCServer, SimpleXMLRPCRequestHandler
 
 from asi.utils.xmlrpc import RequestHandler
 
-from asi.camera.simulator import ScienceCameraSimulator
+from asi.scicam.simulator import ScienceCameraSimulator
 
 server = SimpleXMLRPCServer(("localhost", 7276),
                             requestHandler=RequestHandler,
