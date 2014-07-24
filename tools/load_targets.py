@@ -41,30 +41,11 @@ if __name__ == '__main__':
         line = line.replace('\n', '') + ',,,,,,,'
 
         # Convert '' to None so it gets entered as a NULL in the database
-        name, cat, bands, priority, requester, mpo, maxdt, mindt = [x if x != '' else None for x in line.split(',')[0:8]]
+        name, cat, band, priority, requester, mpo, maxdt, mindt = [x if x != '' else None for x in line.split(',')[0:8]]
 
-
-
-        
-        # Make sure the bands specified are supported by the system
-        bands = filter(bool, bands.split(' '))
-
-        supported_bands = []
-        unsupported_bands = []
+        if not band in config.filters:
+            print "ERROR({l}): In double {dbl}, the filter band {filt} is not supported.  Target skipped...".format(l=i, dbl=name, filt=band)
             
-        for band in bands:
-            if band in config.filters:
-                supported_bands.append(band)
-            else:
-                unsupported_bands.append(band)
-
-        for band in unsupported_bands:
-            print 'WARNING({l}): In double {dbl}, the filter band {filt} is not support by this system.  I will attempt to add the target, skipping that filter band.'.format(l=i, dbl=name, filt=band)
-
-        if not supported_bands:
-            print "ERROR({l}): No valid filter bands were specified for {dbl}. Skipping...".format(l=i, dbl=name)
-            continue            
-
         dbl = fetch_double(session, name, cat)
         if len(dbl) > 1:
             print "ERROR({l}): More than one double matches {dbl}".format(l=i, dbl=name)
@@ -82,7 +63,7 @@ if __name__ == '__main__':
 
             # Check to see if a target already exists for this double
             # If so, we delete it and replace it with the new one after issuing a warning
-            existing = session.query(Target).filter_by(star=dbl).all()
+            existing = session.query(Target).filter_by(star=dbl, band=band).all()
             if len(existing) == 1:
                 print "WARNING({l}): {dbl} is already in the target list.  Its properties have been updated.".format(l=i, dbl=dbl)
 
@@ -100,7 +81,7 @@ if __name__ == '__main__':
             # Add the new target
             target_kwargs = {
                 'star' : dbl,
-                'bands' : ' '.join(supported_bands), # MySQL can't store a list, so space-separate
+                'band' : band,
                 'priority' : priority,
                 'requester' : requester,
                 'mpo' : mpo,

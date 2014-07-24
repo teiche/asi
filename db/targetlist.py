@@ -14,8 +14,8 @@ class Target(Base):
     star = relationship("DoubleStar")
     star_id = Column(Integer, ForeignKey('doublestars.id'))
 
-    # The filter bands(space separated) to observe the double in
-    bands = Column(String(100), nullable=False)
+    # The filter band(only one) to observe the target in
+    band = Column(String(2), nullable=False)
     
     # Priority
     # 0 is "Will not be observed"

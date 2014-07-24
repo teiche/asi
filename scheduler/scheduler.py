@@ -91,12 +91,12 @@ class AbstractScheduler(RPCAble):
         Return the next target to observe and the band as an RPC-serializable string, to be converted into
         an SQLAlchemy ORM object at the client side
         """
-        t, band = self._get_next_target()
+        t = self._get_next_target()
 
         db = t.__class__.__name__
         i = t.id
         
-        return (db, i, band)
+        return (db, i)
         
     @rpc_method
     def target_failed(self):
@@ -134,9 +134,11 @@ class AbstractScheduler(RPCAble):
         observed to include the reference observation filename and reference
         star id.
         """
+        # TODO Move this updating stuff to a more reasonably named function
+        # i.e. split this one in two
         single_id = self.single.id
-        single_obs = \
-        self.session.query(Observation).filter(Observation.id == self.successful_single_obs).one()
+        single_obs = self.session.query(Observation).filter(Observation.id == self.successful_single_obs).one()
+        
         single_obs_filename = single_obs.ref_filename 
 
         for observation_id in self.successful_observations:
