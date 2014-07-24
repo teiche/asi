@@ -2,11 +2,11 @@ import logging
 import time
 import random
 
-from ..utils.xmlrpc import RPCAble
+from abstract import AbstractAcquisitionCamera
 
-logger = logigng.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
-class AcquisitionCameraSimulator(RPCAble):
+class AcquisitionCameraSimulator(AbstractAcquisitionCamera):
     """
     """
 
@@ -15,6 +15,20 @@ class AcquisitionCameraSimulator(RPCAble):
 
         self.done_imaging_at = 0
         self.done_solving_at = 0
+
+        """
+        This inner function is an interesting trick
+
+        The acquisition camera has two blocking operations, take an image and 
+        plate solve an image.  Both have very different end conditions, so I want
+        different objects to pass into _idle_while_busy.  This lets me call
+        _idle_while_busy(self.acquisition) to wait for an image to finish exposing, 
+        and _idle_while_busy(self.acquisition.plate_solve) to wait for a plate to
+        finish solving
+        """
+        self.plate_solve.__func__.ready = self.plate_solve_ready
+        
+        self._xmlrpc_funcs = [self.take_light, self.ready, self.plate_solve, self.plate_solve.ready, self.plate_solution, self.shutdown]
         
     def take_light(seconds):
         logger.info("Taking {seconds} second exposure".format(seconds=seconds))
@@ -29,27 +43,17 @@ class AcquisitionCameraSimulator(RPCAble):
         The results are available through plate_solution() once plate_solve.ready() return True
         """
         
-        """
-        This inner function is an interesting trick
-
-        The acquisition camera has two blocking operations, take an image and 
-        plate solve an image.  Both have very different end conditions, so I want
-        different objects to pass into _idle_while_busy.  This lets me call
-        _idle_while_busy(self.acquisition) to wait for an image to finish exposing, 
-        and _idle_while_busy(self.acquisition.plate_solve) to wait for a plate to
-        finish solving
-        """
-        def ready():
-            """
-            Return true if the plate is solved
-            """
-            return time.time() > self.done_solving_at
-
         logger.info("Plate Solving...")
         self.done_solving_at = time.time() + (random.random() * 5)
 
         rand_err = lambda: (random.random() - .5) * 2
         self.plate_solution = (ra + rand_err(), dec + rand_err())
+
+    def plate_solve_ready():
+        """
+        Return true if the plate is solved
+        """
+        return time.time() > self.done_solving_at
 
     def plate_solution():
         """

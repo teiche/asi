@@ -1,4 +1,6 @@
-class AbstractAcquistionCamera(RPCAble):
+from ..utils.xmlrpc import RPCAble
+
+class AbstractAcquisitionCamera(RPCAble):
     def take_light(seconds):
         """
         Take a light frame with integration time seconds, returning None immediately
