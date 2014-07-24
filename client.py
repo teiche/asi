@@ -13,7 +13,7 @@ TABLE_NAME_MAP = {
 SCHEDULER_DEFAULT_ADDR = config.scheduler_addr
 TELESCOPE_DEFAULT_ADDR = config.telescope_addr
 SLIDER_DEFAULT_ADDR    = config.slider_addr
-SCICAM_DEFAULT_ADDR = config.sciam_addr
+SCICAM_DEFAULT_ADDR = config.scicam_addr
 
 """
 Scheduler needs some client side helper code:
