@@ -25,19 +25,21 @@ class AcquisitionCameraSimulator(AbstractAcquisitionCamera):
         _idle_while_busy(self.acquisition) to wait for an image to finish exposing, 
         and _idle_while_busy(self.acquisition.plate_solve) to wait for a plate to
         finish solving
+
+        This does require a small workaround in client.py to work over XMLRPC
         """
         self.plate_solve.__func__.ready = self.plate_solve_ready
         
-        self._xmlrpc_funcs = [self.take_light, self.ready, self.plate_solve, self.plate_solve.ready, self.plate_solution, self.shutdown]
+        self._xmlrpc_funcs = [self.take_light, self.ready, self.plate_solve, self.plate_solution, self.shutdown, self.plate_solve_ready]
         
-    def take_light(seconds):
+    def take_light(self, seconds):
         logger.info("Taking {seconds} second exposure".format(seconds=seconds))
         self.done_imaging_at = time.time() + seconds
 
-    def ready():
+    def ready(self):
         return time.time() > self.done_imaging_at
 
-    def plate_solve(ra, dec):
+    def plate_solve(self, ra, dec):
         """
         Start plate solving, and return immediately
         The results are available through plate_solution() once plate_solve.ready() return True
@@ -49,13 +51,13 @@ class AcquisitionCameraSimulator(AbstractAcquisitionCamera):
         rand_err = lambda: (random.random() - .5) * 2
         self.plate_solution = (ra + rand_err(), dec + rand_err())
 
-    def plate_solve_ready():
+    def plate_solve_ready(self):
         """
         Return true if the plate is solved
         """
         return time.time() > self.done_solving_at
 
-    def plate_solution():
+    def plate_solution(self):
         """
         return the RA and Dec(in degrees) for the center of the image, 
         as well as the camera angle pixel scale(RA and Dec) in degrees per pixel
@@ -70,5 +72,5 @@ class AcquisitionCameraSimulator(AbstractAcquisitionCamera):
             # Fail 10% of the time
             return False
         
-    def shutdown():
+    def shutdown(self):
         logger.info("Acquisition Camera Simulator Shutting Down...")

@@ -43,7 +43,13 @@ class Telescope(RPCClientOverloadWrapper):
         assert hasattr(star, 'ra_deg') and hasattr(star, 'dec_deg')
 
         self.slew_abs(star.ra_deg, star.dec_deg)
-    
+
+class AcquisitionCamera(RPCClientOverloadWrapper):
+    def __init__(self, hostname=ACQUISCAM_DEFAULT_ADDR):
+        super(AcquisitionCamera, self).__init__(hostname)
+
+        self.plate_solve.ready = self.plate_solve_ready
+        
 # The rest are vanilla XMLRPC instance, so configure them in a sane manner then pass off it on
 def _make_xmlrpc_connection(addr):
     return xmlrpclib.ServerProxy(addr, allow_none=True)
@@ -59,5 +65,7 @@ def Slider(addr=SLIDER_DEFAULT_ADDR):
 def ScienceCamera(addr=SCICAM_DEFAULT_ADDR):
     return _make_xmlrpc_connection(addr)
 
+'''
 def AcquisitionCamera(addr=ACQUISCAM_DEFAULT_ADDR):
     return _make_xmlrpc_connection(addr)
+'''
