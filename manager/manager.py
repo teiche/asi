@@ -103,6 +103,7 @@ class RunManager(RPCAble):
         """
         The main loop, while the telescope is running(not shut down)
         """
+        ########################################################################
         logger.info("Requesting new target...")
         try:
             target, band, requester = self.scheduler.get_next_target()
@@ -116,6 +117,7 @@ class RunManager(RPCAble):
 
         logger.info("New Target: {target}".format(target=target))
 
+        ########################################################################
         logger.info("Slewing to target...")
         try:
             self.telescope.slew_obs(target)
@@ -127,7 +129,14 @@ class RunManager(RPCAble):
         logger.info("Slider to Acquisition Camera...")
         self.slider.to_acquisition()
 
-        self._idle_while_busy(self.telescope, self.slider)
+        self.focuser.to_acquisition()
+        logger.info("Focuser to Acquisition Camera...")
+
+        self._idle_while_busy(self.telescope, self.slider, self.focuser)
+
+        ########################################################################
+        logger.info("Taking acquisition image...")
+        
 
         '''
         logger.info("Focusing Acquisition Camera...")
@@ -146,8 +155,6 @@ class RunManager(RPCAble):
         # TODO: Do some speckle imaging
         # # Slew telescope by offset
         # # Make initial guess of science camera exposure parameters
-        
-        successful_observation_ids = []
 
         if self.science_camera.target_in_camera(): #placeholder
             # # Set science camera exposure parameters
