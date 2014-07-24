@@ -5,7 +5,7 @@ import xmlrpclib
 import datetime
 
 from .. import db
-from db.runlog import Observation
+from asi.db.runlog import Observation
 from .. import log
 from ..utils.xmlrpc import RPCAble
 

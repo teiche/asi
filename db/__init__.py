@@ -1,5 +1,3 @@
-print "DB INIT"
-
 ### The following handles creating one engine and Session instance for the app ###
 import logging
 logger = logging.getLogger(__name__)
@@ -18,3 +16,4 @@ Session = sessionmaker(bind=engine)
 ### Begin some normal __init__ stuff ###
 import catalog
 import targetlist
+import runlog
