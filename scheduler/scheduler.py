@@ -76,7 +76,7 @@ class AbstractScheduler(RPCAble):
 
         elif self.single and self.successful_doubles: 
             # If we have a single ready to go, and we observed at least one double
-            self.current = self.single
+            self.current = self.single, None, None # None = placeholders for band, requester
             self.single = None
 
         else: # We're out of singles and doubles
@@ -91,12 +91,12 @@ class AbstractScheduler(RPCAble):
         Return the next target to observe and the band as an RPC-serializable string, to be converted into
         an SQLAlchemy ORM object at the client side
         """
-        t = self._get_next_target()
-
-        db = t.__class__.__name__
-        i = t.id
+        double, band, requester = self._get_next_target()
         
-        return (db, i)
+        db = double.__class__.__name__
+        i = double.id
+        
+        return (db, i, band, requester)
         
     @rpc_method
     def target_failed(self):
@@ -109,10 +109,11 @@ class AbstractScheduler(RPCAble):
         In the case of a single, a new single is found
         """
         if isinstance(self.current[0], ReferenceStar):
+            # TODO Make sure we skip the one we already tried
             self.single = self.get_next_single_star(self.successful_doubles)
 
     @rpc_method
-    def target_success(self, observation_ids = []):
+    def target_success(self):
         """
         The current target was a success
 
@@ -121,10 +122,14 @@ class AbstractScheduler(RPCAble):
         """
         if isinstance(self.current[0], DoubleStar):
             self.successful_doubles.append(self.current)
-            self.successful_observations.extend(observation_ids)
-        elif isinstance(self.current[0], SingleStar):
+            #self.successful_observations.extend(observation_ids)
+
+        '''
+        elif isinstance(self.current[0], ReferenceStar):
+            print observation_ids
             assert len(observation_ids) == 1, "There should only be one observation of the single star"
             self.successful_single_obs = observation_ids[0]
+        '''
 
     def _load_next_group(self):
         """
@@ -136,6 +141,7 @@ class AbstractScheduler(RPCAble):
         """
         # TODO Move this updating stuff to a more reasonably named function
         # i.e. split this one in two
+        '''
         single_id = self.single.id
         single_obs = self.session.query(Observation).filter(Observation.id == self.successful_single_obs).one()
         
@@ -146,6 +152,7 @@ class AbstractScheduler(RPCAble):
             obs.ref_id = single_id
             obs.ref_filename = single_obs_filename
             session.commit()
+        '''
     
         self.successful_observations = []
         self.successful_single_obs = None
@@ -160,20 +167,24 @@ class AbstractScheduler(RPCAble):
         This is to be overloaded by a child class
         """
         raise NotImplemented
-        
-    def get_next_double_group(self):
-        """
-        Call _get_next_target_group, extract all DoubleStars and the band to
-        observe them in from the Target objects, 
-        and return a new list, preserving order
-        """
-        return [(x.star, x.band) for x in self._get_next_target_group()]
 
     def update(self):
         """
         """
         pass
+        
+    def get_next_double_group(self):
+        """
+        Call _get_next_target_group, extract all DoubleStars, the band to
+        observe them in, and the requester from the Target objects, 
+        and return a new list, preserving order
 
+        # We do this to avoid using Target objects outside this class
+        # We avoid doing that because it gets complicated when ReferenceStars don't have
+        # corresponding target objects
+        """
+        return [(x.star, x.band, x.requester) for x in self._get_next_target_group()]
+        
     def get_next_single_star(self, doubles, ra_dist=0, dec_dist=0):
         if len(doubles) != 1:
             logger.critical("Finding a single star for a non-1 set of doubles is not currently supported.")
@@ -185,8 +196,7 @@ class AbstractScheduler(RPCAble):
         if dec_dist == 0:
             dec_dist = self.MAX_SINGLE_DIST_DEC
 
-        print 'double', doubles
-        dbl, band = doubles[0]
+        dbl, band, _ = doubles[0]
         ra_range = (dbl.ra_deg - ra_dist, dbl.ra_deg + ra_dist)
         dec_range = (dbl.dec_deg - dec_dist, dbl.dec_deg + dec_dist)
 

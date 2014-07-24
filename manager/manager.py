@@ -105,11 +105,12 @@ class RunManager(RPCAble):
         """
         logger.info("Requesting new target...")
         try:
-            target, band = self.scheduler.get_next_target()
+            target, band, requester = self.scheduler.get_next_target()
 
         except xmlrpclib.Fault, e:
             # There are no observable targets
             logger.error(log.sanitize_fault(e.faultString))
+            logger.error(sys.exc_info())
             self.shutdown()
             return
 
@@ -153,52 +154,37 @@ class RunManager(RPCAble):
 
             filename = self.science_camera.get_filename()
             itime = self.science_camera.get_itime()
-            emgian = self.science_camera.get_emgain()
+            emgain = self.science_camera.get_emgain()
             roi_height = self.science_camera.get_roi_height()
             roi_width = self.science_camera.get_roi_width()
-            ra_deg, dec_deg = telescope.get_pos()
+            ra_deg, dec_deg = self.telescope.get_pos()
             
-            if isinstance(target, DoubleStar):
+            if isinstance(target, db.catalog.DoubleStar):
                 obs = Observation(
                     filename = filename,
-                    star_id = target.star_id,
+                    star_id = target.id,
                     datetime = datetime.datetime.now(),
                     emgain = emgain,
                     itime = itime,
-                    requester = target.requester,
+                    requester = requester,
                     roi_width = roi_width,
                     roi_height = roi_height,
                     ra_deg = ra_deg,
                     dec_deg = dec_deg,
                     band = band
                     )
-            elif isinstance(target, ReferenceStar):
-                obs = Observation(
-                    ref_filename = filename,
-                    ref_star_id = target.star_id,
-                    datetime = datetime.datetime.now(),
-                    emgain = emgain,
-                    itime = itime,
-                    requester = target.requester,
-                    roi_width = roi_width,
-                    roi_height = roi_height,
-                    ra_deg = ra_deg,
-                    dec_deg = dec_deg,
-                    band = band
-                    )
-            else:
-                raise TypeError("Target is not a DoubleStar or a ReferenceStar")
 
+                self.session.add(obs)
+                self.session.commit()
+                
+                successful_observation_ids.append(obs.id)
+
+                del obs
+                            
             print """Saved obsevation in run log with filename {}""".format(filename)
 
-            self.session.add(obs)
-            self.session.commit()
-
-            successful_observation_ids.append(obs.id)
-
-            del obs
             
-            self.scheduler.target_success(successful_observation_ids)
+            self.scheduler.target_success()
 
         
 

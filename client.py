@@ -26,12 +26,12 @@ class Scheduler(RPCClientOverloadWrapper):
         super(Scheduler, self).__init__(hostname)
 
     def get_next_target(self):
-        table, i, band = self._rpc.get_next_target()
+        table, i, band, requester = self._rpc.get_next_target()
 
         session = db.Session()
         star = session.query(TABLE_NAME_MAP[table]).filter_by(id=i).first()
 
-        return star, band
+        return star, band, requester
 
 class Telescope(RPCClientOverloadWrapper):
     def __init__(self, hostname=TELESCOPE_DEFAULT_ADDR):
