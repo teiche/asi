@@ -16,7 +16,7 @@ log_path = config.get('Logging', 'log_path')
 scheduler_addr = config.get('RPC', 'scheduler_addr')
 telescope_addr = config.get('RPC', 'telescope_addr')
 slider_addr = config.get('RPC', 'slider_addr')
-science_camera_addr = config.get('RPC', 'science_camera_addr')
+scicam_addr = config.get('RPC', 'scicam_addr')
 
 # Filters
 # Create a dictionary of filter : filter wheel index pairs, starting a 0
