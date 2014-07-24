@@ -8,6 +8,7 @@ from .. import db
 from asi.db.runlog import Observation
 from .. import log
 from ..utils.xmlrpc import RPCAble
+from .. import config
 
 logger = logging.getLogger(__name__)
 
@@ -39,12 +40,13 @@ NO  -- Log Failure
 class RunManager(RPCAble):
     IDLE_GRANULARITY = .1
     
-    def __init__(self, scheduler, telescope, slider, focuser, science_camera):
+    def __init__(self, scheduler, telescope, slider, focuser, scicam, acquiscam):
         self.scheduler = scheduler
         self.telescope = telescope
         self.slider = slider
         self.focuser = focuser
-        self.science_camera = science_camera
+        self.scicam = scicam
+        self.acquiscam = acquiscam
         
         self.session = db.Session()
 
@@ -126,18 +128,16 @@ class RunManager(RPCAble):
             self.skip_target(target)
             return
 
-        logger.info("Slider to Acquisition Camera...")
-        self.slider.to_acquisition()
 
+        self.slider.to_acquisition()
+        logger.info("Slider to Acquisition Camera...")
+        
         self.focuser.to_acquisition()
         logger.info("Focuser to Acquisition Camera...")
-
+        
         self._idle_while_busy(self.telescope, self.slider, self.focuser)
 
         ########################################################################
-        logger.info("Taking acquisition image...")
-        
-
         '''
         logger.info("Focusing Acquisition Camera...")
         try:
@@ -148,27 +148,55 @@ class RunManager(RPCAble):
             self.skip_target(target)
             return
         '''
+        
+        ########################################################################
+        logger.info("Calculating current actual position with acquisition camera...")
+        for x in range(0, config.plate_solve_tries):
+            logger.info("Taking acquisition image...")
+            self.acquiscam.take_light(config.acquiscam_itime)
+            self._idle_while_busy(self.acquiscam)
 
+            logger.info("Plate solving acquisition image...")
+            self.acquiscam.plate_solve(*self.telescope.get_pos())
+            self._idle_while_busy(self.acquiscam.plate_solve)
+
+            if self.acquiscam.plate_solution() is None:
+                logger.warning("Plate solving failed")
+            else:
+                logger.info("Plate solving succeeded")            
+                break
+                            
+        else:
+            # Plate solving failed config.plate_solve_tries times
+            # Skip this target
+            self.skip_target(target)
+            return
+
+        ra_deg, dec_deg, cam_angle, ra_deg_pix, dec_deg_pix = self.acquiscam.plate_solution()
+        
+        
+        ########################################################################
         self.focuser.to_science()
-        self._idle_while_busy(self.focuser)
+        self.slider.to_science()
+        self._idle_while_busy(self.focuser, self.slider)
 
         # TODO: Do some speckle imaging
         # # Slew telescope by offset
         # # Make initial guess of science camera exposure parameters
 
-        if self.science_camera.target_in_camera(): #placeholder
+        if self.scicam.target_in_camera(): #placeholder
             # # Set science camera exposure parameters
 
-            filename = self.science_camera.get_filename()
-            itime = self.science_camera.get_itime()
-            emgain = self.science_camera.get_emgain()
-            roi_height = self.science_camera.get_roi_height()
-            roi_width = self.science_camera.get_roi_width()
+            filename = self.scicam.get_filename()
+            itime = self.scicam.get_itime()
+            emgain = self.scicam.get_emgain()
+            roi_height = self.scicam.get_roi_height()
+            roi_width = self.scicam.get_roi_width()
             ra_deg, dec_deg = self.telescope.get_pos()
             
             if isinstance(target, db.catalog.DoubleStar):
                 obs = Observation(
-                    filename = filename,
+                     filename = filename,
                     star_id = target.id,
                     datetime = datetime.datetime.now(),
                     emgain = emgain,
@@ -183,8 +211,6 @@ class RunManager(RPCAble):
 
                 self.session.add(obs)
                 self.session.commit()
-                
-                successful_observation_ids.append(obs.id)
 
                 del obs
                             

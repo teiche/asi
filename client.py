@@ -48,7 +48,12 @@ class AcquisitionCamera(RPCClientOverloadWrapper):
     def __init__(self, hostname=ACQUISCAM_DEFAULT_ADDR):
         super(AcquisitionCamera, self).__init__(hostname)
 
-        self.plate_solve.ready = self.plate_solve_ready
+        # These are so _idle_while_busy(acquiscam.plate_solve) waits for a plate solve to complete
+        self.plate_solve.__func__.ready = lambda: self._rpc.plate_solve_ready()
+        self.plate_solve.__func__.name = lambda: self._rpc.name() + '-PlateSolver'
+        
+    def plate_solve(self, ra, dec):
+        self._rpc.plate_solve(ra, dec)
         
 # The rest are vanilla XMLRPC instance, so configure them in a sane manner then pass off it on
 def _make_xmlrpc_connection(addr):

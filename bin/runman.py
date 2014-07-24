@@ -43,13 +43,20 @@ except socket.error:
 focuser = asi.focuser.simulator.SimulatorFocuser()
 
 try:
-    science_camera = asi.client.ScienceCamera()
-    logger.info("Connected to science camera: " + science_camera.name())
+    science_cam = asi.client.ScienceCamera()
+    logger.info("Connected to science camera: " + science_cam.name())
 except socket.error:
     logger.critical("Could not connect to science camera")
     sys.exit()
 
-rm = RunManager(scheduler, telescope, slider, focuser, science_camera)
+try:
+    acquisition_cam = asi.client.AcquisitionCamera()
+    logger.info("Connected to acquisition camera: " + acquisition_cam.name())
+except socket.error:
+    logger.critical("Could not connect to acquisition camera")
+    sys.exit()
+    
+rm = RunManager(scheduler, telescope, slider, focuser, science_cam, acquisition_cam)
 
 while 1:
     rm.update()

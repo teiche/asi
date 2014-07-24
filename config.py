@@ -26,6 +26,11 @@ filters = dict(map(lambda x: (x[1], x[0]), enumerate(filter(bool, config.get('Fi
 # Focus
 science_focus_offset = int(config.get('Focus', 'science_offset'))
 
+# Acquisition
+acquiscam_itime = int(config.get('Acquisition', 'itime'))
+plate_solve_tries = int(config.get('Acquisition', 'plate_solve_tries'))
+scicam_x = int(config.get('Acquisition', 'scicam_x'))
+scicam_y = int(config.get('Acquisition', 'scicam_y'))
 
     
 

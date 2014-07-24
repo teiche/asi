@@ -9,7 +9,7 @@ DB_ADDR_STRING = 'mysql+mysqlconnector://speckle_user:lebenswelt@localhost:3306/
 
 logger.info("Connecting to database at " + DB_ADDR_STRING)
 
-engine = sqlalchemy.create_engine(DB_ADDR_STRING)
+engine = sqlalchemy.create_engine(DB_ADDR_STRING, pool_recycle=14400)
 
 Session = sessionmaker(bind=engine)
 

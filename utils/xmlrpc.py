@@ -33,9 +33,13 @@ class RPCAble(object):
             obj = getattr(self, thing)
             if hasattr(obj, 'rpc_method'):
                 self._xmlrpc_funcs.append(obj)
+                print 'register', obj
 
                 #return super(RPCAble, self).__new__(self)
 
+        print 'end __init__'
+        print self._xmlrpc_funcs
+                
     @rpc_method
     def name(self):
         return self.__class__.__name__
@@ -44,8 +48,12 @@ class RPCAble(object):
         """
         Take a SimpleXMLRPCServer and register all functions in self._xmlrpc_funcs with it
         """
+        print 'begin reg'
+        print self._xmlrpc_funcs
+        
         for func in self._xmlrpc_funcs:
             server.register_function(func)
+            print 'xmlrpc', func
                         
 class RPCClientOverloadWrapper(object):
     """
