@@ -37,8 +37,14 @@ class AcquisitionCameraSimulator(AbstractAcquisitionCamera):
 
         #rand_err = lambda: (random.random() - .5) * 2
         rand_err = lambda: 0
-        self.plate_info = (ra + rand_err(), dec + rand_err())
 
+        if random.random() < .9:  
+            self.plate_info = (ra + rand_err(), dec + rand_err(), random.random() * 360, 0.000763, 0.000763)
+
+        else:
+            # Fail 10% of the time
+            self.plate_info = False
+        
     def plate_solve_ready(self):
         """
         Return true if the plate is solved
@@ -53,12 +59,7 @@ class AcquisitionCameraSimulator(AbstractAcquisitionCamera):
 
         This returns False if the plate solve failed
         """      
-        if random.random() < .9:  
-            return self.plate_info + (random.random() * 360, 0.000763, 0.000763)
+        return self.plate_info
 
-        else:
-            # Fail 10% of the time
-            return False
-        
     def shutdown(self):
         logger.info("Acquisition Camera Simulator Shutting Down...")

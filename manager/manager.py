@@ -3,6 +3,7 @@ import time
 import logging
 import xmlrpclib
 import datetime
+import math
 
 from .. import db
 from asi.db.runlog import Observation
@@ -155,12 +156,11 @@ class RunManager(RPCAble):
         ra_offset_slew = dec_offset_slew = 0
         
         outside_target_bounds = True        
-        while outside target bouds:
+        while outside_target_bounds:
             if ra_offset_slew or dec_offset_slew:
-                logger.info("Slewing by offset ({ra_deg, dec_deg})".format(ra_dec=ra_offset_slew,
+                logger.info("Slewing by offset ({ra_deg}, {dec_deg})".format(ra_deg=ra_offset_slew,
                                                                            dec_deg=dec_offset_slew))
-                ra_offset_slew = target.ra_dec - ra_deg
-                dec_offset_slew = target.dec_deg - dec_deg
+
                 self.telescope.slew_rel(ra_offset_slew, dec_offset_slew)
             
             logger.info("Calculating current actual position with acquisition camera...")
@@ -173,7 +173,7 @@ class RunManager(RPCAble):
                 self.acquiscam.plate_solve(*self.telescope.get_pos())
                 self._idle_while_busy(self.acquiscam.plate_solve)
                 
-                if self.acquiscam.plate_solution() is None:
+                if not self.acquiscam.plate_solution():
                     logger.warning("Plate solving failed")
                 else:
                     logger.info("Plate solving succeeded")            
@@ -187,11 +187,28 @@ class RunManager(RPCAble):
 
             ra_deg, dec_deg, cam_angle, ra_deg_pix, dec_deg_pix = self.acquiscam.plate_solution()
 
-            outside_target_bounds = (abs(ra_deg - target.ra_deg) > config.ra_err) or (abs(dec_deg - target.dec_deg) > config.dec_err)
-               
-        logger.info("Slewing telescope to place target in science camera")
-        
+            # How far the target is from our current position
+            ra_offset_slew = target.ra_deg - ra_deg
+            dec_offset_slew = target.dec_deg - dec_deg
+
+            logger.debug("Target distance: ({0}, {1})".format(ra_offset_slew, dec_offset_slew))
+            
+            outside_target_bounds = (abs(ra_offset_slew) > config.ra_err) or (abs(dec_offset_slew) > config.dec_err)
+
         ########################################################################
+            
+        logger.info("Slewing telescope to place target in science camera")
+
+        cam_angle = math.radians(cam_angle)
+        
+        ra_offset_slew  = ((config.scicam_x * ra_deg_pix * math.cos(cam_angle)) + 
+                           (config.scicam_y * dec_deg_pix * math.sin(cam_angle)))
+        dec_offset_slew = ((config.scicam_x * ra_deg_pix * math.sin(cam_angle)) + 
+                           (config.scicam_y * dec_deg_pix * math.cos(cam_angle)))
+
+        logger.debug("    ({ra}, {dec})".format(ra=ra_offset_slew, dec=dec_offset_slew))
+        self.telescope.slew_rel(ra_offset_slew, dec_offset_slew)
+        
         self.focuser.to_science()
         self.slider.to_science()
         self._idle_while_busy(self.focuser, self.slider)

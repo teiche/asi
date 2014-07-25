@@ -32,8 +32,8 @@ acquiscam_itime = int(config.get('Acquisition', 'itime'))
 # The number of times a given spot in the sky is imaged and plate solved before the target is 
 # skipped
 plate_solve_tries = int(config.get('Acquisition', 'plate_solve_tries'))
-# The location(relative to upper left) of the center of the science camera within the 
-# acquisition camera
+# The location of the center of the science camera within the 
+# acquisition camera, relative to the center of the acquisition camera
 scicam_x = int(config.get('Acquisition', 'scicam_x'))
 scicam_y = int(config.get('Acquisition', 'scicam_y'))
 # The maximum distance(in degrees) that the target can be from the center of field
