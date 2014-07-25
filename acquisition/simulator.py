@@ -35,7 +35,8 @@ class AcquisitionCameraSimulator(AbstractAcquisitionCamera):
         logger.info("Plate Solving...")
         self.done_solving_at = time.time() + (random.random() * 5)
 
-        rand_err = lambda: (random.random() - .5) * 2
+        #rand_err = lambda: (random.random() - .5) * 2
+        rand_err = lambda: 0
         self.plate_info = (ra + rand_err(), dec + rand_err())
 
     def plate_solve_ready(self):

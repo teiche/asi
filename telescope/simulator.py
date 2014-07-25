@@ -1,3 +1,5 @@
+import random
+
 from ..utils.xmlrpc import RPCAble, rpc_method
 
 class TelescopeSimulator(RPCAble):
@@ -25,8 +27,8 @@ class TelescopeSimulator(RPCAble):
     def slew_abs(self, ra, dec):
         print "slew_abs to ({ra}, {dec})...".format(ra=ra, dec=dec)
 
-        self.target_ra = ra
-        self.target_dec = dec
+        self.target_ra = ra + (random.random() - 0.5) * 10
+        self.target_dec = dec + (random.random() - 0.5) * 10
 
     @rpc_method        
     def slewing(self):
