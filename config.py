@@ -27,11 +27,18 @@ filters = dict(map(lambda x: (x[1], x[0]), enumerate(filter(bool, config.get('Fi
 science_focus_offset = int(config.get('Focus', 'science_offset'))
 
 # Acquisition
+# Integration time to use when taking an image for plate solving
 acquiscam_itime = int(config.get('Acquisition', 'itime'))
+# The number of times a given spot in the sky is imaged and plate solved before the target is 
+# skipped
 plate_solve_tries = int(config.get('Acquisition', 'plate_solve_tries'))
+# The location(relative to upper left) of the center of the science camera within the 
+# acquisition camera
 scicam_x = int(config.get('Acquisition', 'scicam_x'))
 scicam_y = int(config.get('Acquisition', 'scicam_y'))
-
+# The maximum distance(in degrees) that the target can be from the center of field
+ra_err = float(config.get('Acquisition', 'ra_err'))
+dec_err = float(config.get('Acquisition', 'dec_err'))
     
 
 

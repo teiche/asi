@@ -148,32 +148,48 @@ class RunManager(RPCAble):
             self.skip_target(target)
             return
         '''
-        
         ########################################################################
-        logger.info("Calculating current actual position with acquisition camera...")
-        for x in range(0, config.plate_solve_tries):
-            logger.info("Taking acquisition image...")
-            self.acquiscam.take_light(config.acquiscam_itime)
-            self._idle_while_busy(self.acquiscam)
-
-            logger.info("Plate solving acquisition image...")
-            self.acquiscam.plate_solve(*self.telescope.get_pos())
-            self._idle_while_busy(self.acquiscam.plate_solve)
-
-            if self.acquiscam.plate_solution() is None:
-                logger.warning("Plate solving failed")
-            else:
-                logger.info("Plate solving succeeded")            
-                break
-                            
-        else:
-            # Plate solving failed config.plate_solve_tries times
-            # Skip this target
-            self.skip_target(target)
-            return
-
-        ra_deg, dec_deg, cam_angle, ra_deg_pix, dec_deg_pix = self.acquiscam.plate_solution()
         
+        # Determine where we're pointing and slew by the difference between than and the target
+        # until the target is within (ra_err, dec_err) of the center of the field
+        ra_offset_slew = dec_offset_slew = 0
+        
+        outside_target_bounds = True        
+        while outside target bouds:
+            if ra_offset_slew or dec_offset_slew:
+                logger.info("Slewing by offset ({ra_deg, dec_deg})".format(ra_dec=ra_offset_slew,
+                                                                           dec_deg=dec_offset_slew))
+                ra_offset_slew = target.ra_dec - ra_deg
+                dec_offset_slew = target.dec_deg - dec_deg
+                self.telescope.slew_rel(ra_offset_slew, dec_offset_slew)
+            
+            logger.info("Calculating current actual position with acquisition camera...")
+            for x in range(0, config.plate_solve_tries):
+                logger.info("Taking acquisition image...")
+                self.acquiscam.take_light(config.acquiscam_itime)
+                self._idle_while_busy(self.acquiscam)
+                
+                logger.info("Plate solving acquisition image...")
+                self.acquiscam.plate_solve(*self.telescope.get_pos())
+                self._idle_while_busy(self.acquiscam.plate_solve)
+                
+                if self.acquiscam.plate_solution() is None:
+                    logger.warning("Plate solving failed")
+                else:
+                    logger.info("Plate solving succeeded")            
+                    break
+                            
+            else:
+                # Plate solving failed config.plate_solve_tries times
+                # Skip this target
+                self.skip_target(target)
+                return
+
+            ra_deg, dec_deg, cam_angle, ra_deg_pix, dec_deg_pix = self.acquiscam.plate_solution()
+
+            outside_target_bounds = (abs(ra_deg - target.ra_deg) > config.ra_err) or (abs(dec_deg - target.dec_deg) > config.dec_err)
+               
+        logger.info("Slewing telescope to place target in science camera")
         
         ########################################################################
         self.focuser.to_science()
