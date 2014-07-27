@@ -29,10 +29,5 @@ class ScienceCameraSimulator(RPCAble):
     def target_in_camera(self):
         return True
 
-    @rpc_method
-    def get_roi_width(self):
-        return 1024
-
-    @rpc_method
-    def get_roi_height(self):
-        return 1024
+    def get_roi(self):
+        return (1024, 1024)
