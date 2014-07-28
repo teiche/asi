@@ -25,24 +25,17 @@ class RPCAble(object):
             # If the subclass didn't make an _xmlrpc_funcs, make one and populate it
             # with decorated functions
             self._xmlrpc_funcs = []
-            print 'nope'
 
         else:
             self._xmlrpc_funcs = list(self._xmlrpc_funcs)
-
-        print "RPC FUNC", self._xmlrpc_funcs
             
         for thing in dir(self):
             obj = getattr(self, thing)
             if hasattr(obj, 'rpc_method'):
                 self._xmlrpc_funcs.append(obj)
-                print 'register', obj
 
                 #return super(RPCAble, self).__new__(self)
-
-        print 'end __init__'
-        print self._xmlrpc_funcs
-                
+                                
     @rpc_method
     def name(self):
         return self.__class__.__name__
@@ -50,13 +43,9 @@ class RPCAble(object):
     def register_xmlrpc_functions(self, server):
         """
         Take a SimpleXMLRPCServer and register all functions in self._xmlrpc_funcs with it
-        """
-        print 'begin reg'
-        print self._xmlrpc_funcs
-        
+        """        
         for func in self._xmlrpc_funcs:
             server.register_function(func)
-            print 'xmlrpc', func
                         
 class RPCClientOverloadWrapper(object):
     """

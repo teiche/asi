@@ -1,3 +1,5 @@
+#! /usr/bin/env python
+
 from SimpleXMLRPCServer import SimpleXMLRPCServer, SimpleXMLRPCRequestHandler
 
 import asi
