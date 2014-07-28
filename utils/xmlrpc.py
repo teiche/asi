@@ -25,10 +25,13 @@ class RPCAble(object):
             # If the subclass didn't make an _xmlrpc_funcs, make one and populate it
             # with decorated functions
             self._xmlrpc_funcs = []
+            print 'nope'
 
         else:
             self._xmlrpc_funcs = list(self._xmlrpc_funcs)
-        
+
+        print "RPC FUNC", self._xmlrpc_funcs
+            
         for thing in dir(self):
             obj = getattr(self, thing)
             if hasattr(obj, 'rpc_method'):

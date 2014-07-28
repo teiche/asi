@@ -223,8 +223,7 @@ class RunManager(RPCAble):
             filename = self.scicam.get_filename()
             itime = self.scicam.get_itime()
             emgain = self.scicam.get_emgain()
-            roi_height = self.scicam.get_roi_height()
-            roi_width = self.scicam.get_roi_width()
+            roi_height, roi_width = self.scicam.get_roi()
             ra_deg, dec_deg = self.telescope.get_pos()
             
             if isinstance(target, db.catalog.DoubleStar):

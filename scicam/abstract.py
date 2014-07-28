@@ -8,13 +8,15 @@ class AbstractScienceCamera(RPCAble):
     SIXTEENTH = 4
 
     def __init__(self):
-        self._rpc_funcs = [self.get_filename, self.get_itime, self.get_emgain, self.ready,
+        self._xmlrpc_funcs = [self.get_filename, self.get_itime, self.get_emgain, self.ready,
                            self.target_in_camera, self.get_roi, self.start_continuous,
                            self.start_acquisition, self.abort, self.get_progress, 
                            self.get_kinetic_series_length, self.get_avg_well_fill,
                            self.set_kinetic_series_length, self.set_itime, self.set_gain,
                            self.set_roi]
 
+        print self._xmlrpc_funcs
+        
         super(AbstractScienceCamera, self).__init__()
 
     def get_filename(self):
