@@ -40,7 +40,9 @@ scicam_y = int(config.get('Acquisition', 'scicam_y'))
 ra_err = float(config.get('Acquisition', 'ra_err'))
 dec_err = float(config.get('Acquisition', 'dec_err'))
     
-
-
+# Slider
+slider_motor_id = int(config.get('Slider', 'motor_id'))
+slider_acquis_pos = int(config.get('Slider', 'acquis_pos'))
+slider_sci_pos = int(config.get('Slider', 'sci_pos'))
 
 
