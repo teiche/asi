@@ -17,7 +17,7 @@ server.timeout = .001
 
 server.register_introspection_functions()
 
-slider = PhidgetStepperSlider
+slider = PhidgetStepperSlider()
 slider.register_xmlrpc_functions(server)
     
 print "Phidget Stepper Slider running..."
