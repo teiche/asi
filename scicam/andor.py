@@ -6,6 +6,7 @@ START_CONTINUOUS = 'c'
 START_ACQUISITION = 'x'
 ABORT = 's'
 GET_IMAGING = 'X'
+GET_FILENAME = 'F'
 GET_PROGRESS = 'P'
 GET_KINETIC_SERIES_LENGTH = 'K'
 GET_INTEGRATION_TIME = 'I'
@@ -16,6 +17,8 @@ SET_KINETIC_SERIES_LENGTH = 'k'
 SET_INTEGRATION_TIME = 'i'
 SET_GAIN = 'g'
 SET_ROI = 'r'
+AUTOEXPOSE = 'e'
+QUIT = 'q'
 
 ROI_SIZE = {
     1 : (512, 512),
@@ -58,16 +61,22 @@ class AndorScienceCamera(abstract.AbstractScienceCamera):
         self.sock.send(cmd)
         return self.sock.recv(4)
 
+    def quit(self):
+        self._cmd(QUIT)
+
     def get_filename(self):
         """
         Return the file name of the last saved FITS cube
         """
-        raise NotImplementedError
+        print("get_filename")
+        self.sock.send(GET_FILENAME)
+        return self.sock.recv(256)
 
     def get_itime(self):
         """
         Return the integration time in milliseconds
         """
+        print("get_itime")
         msg = self._cmd(GET_INTEGRATION_TIME)
 
         return word2int(msg)
@@ -77,14 +86,20 @@ class AndorScienceCamera(abstract.AbstractScienceCamera):
         Return the gain of the sensor
         If gain is not supported, this always returns -1
         """
+        print "get_emgain"
         msg = self._cmd(GET_GAIN)
 
         return word2int(msg)
+
+    def autoexpose(self):
+        print "autoexpose"
+        self._cmd(AUTOEXPOSE)
 
     def ready(self):
         """
         Return true if the camera is not imaging
         """
+        print "ready"
         msg = self._cmd(GET_IMAGING)
         return not ord(msg[0])
 
@@ -92,6 +107,7 @@ class AndorScienceCamera(abstract.AbstractScienceCamera):
         """
         Return true if there is a high probability that the target is in the science camera
         """
+        print "target_in_camera"
         print "INFO: Placeholder target_in_camera() -> True"
         return True
 
@@ -99,6 +115,7 @@ class AndorScienceCamera(abstract.AbstractScienceCamera):
         """
         Return the current region of interest size(not position), as a 2-tuple
         """
+        print "get_roi"
         roi = ord(self._cmd(GET_ROI)[0])
 
         try:
@@ -113,12 +130,14 @@ class AndorScienceCamera(abstract.AbstractScienceCamera):
         Start continuous acquisiton without saving any data
         This does not modify the sequence number
         """
+        print "start_continuos"
         self._cmd(START_CONTINUOUS)
 
     def start_acquisition(self):
         """
         Take and save a FITS cube. This increments the sequence number.
         """
+        print "start_acquis"
         self._cmd(START_ACQUISITION)
         
     def abort(self):
@@ -127,6 +146,7 @@ class AndorScienceCamera(abstract.AbstractScienceCamera):
         If this aborts an acquisition for data(start_acquisition), the sequence number
         is reverted to the previous number and no data is stored
         """
+        print "abort"
         self._cmd(ABORT)
 
     def get_progress(self):
@@ -134,6 +154,8 @@ class AndorScienceCamera(abstract.AbstractScienceCamera):
         Return a 2-tuple of (percent, frames) indicating the progress of the current
         acquisition.  In continuous mode, percent is always 100
         """
+        print "get_progress"
+
         msg = self._cmd(GET_PROGRESS)
         perc = ord(msg[0])
         frames = msg[1:3]
@@ -144,6 +166,8 @@ class AndorScienceCamera(abstract.AbstractScienceCamera):
         """
         Return the length of the current kinetic series
         """
+
+        print "get_kinlen_len"
         return word2int(self._cmd(GET_KINETIC_SERIES_LENGTH))
 
     def get_avg_well_fill(self):
@@ -151,6 +175,7 @@ class AndorScienceCamera(abstract.AbstractScienceCamera):
         Return a 2-tuple of (percent, ADU), representing the average well counts 
         for the top 10% of pixels
         """
+        print "get_avg_well_fill"
         msg = self._cmd(GET_AVG_WELL_FILL)
         perc = ord(msg[0])
         frames = msg[1:3]
@@ -161,6 +186,7 @@ class AndorScienceCamera(abstract.AbstractScienceCamera):
         """
         Set the number of frames per FITS cube
         """
+        print "set_kinetic_len"
         self.sock.send(SET_KINETIC_SERIES_LENGTH + int2word(klen))
         self.sock.recv(4)
 
@@ -168,6 +194,7 @@ class AndorScienceCamera(abstract.AbstractScienceCamera):
         """
         Set the integration time, in milliseconds
         """
+        print "set_itime"
         self.sock.send(SET_INTEGRATION_TIME + int2word(itime))
         self.sock.recv(4)
 
@@ -176,6 +203,7 @@ class AndorScienceCamera(abstract.AbstractScienceCamera):
         Set the gain of the sensor.  If the camera does not support gain, this raises a
         NotImplementedError
         """
+        print "set_gain"
         self.sock.send(SET_GAIN + int2word(gain)[2:4])
         self.sock.recv(4)
 
@@ -192,6 +220,7 @@ class AndorScienceCamera(abstract.AbstractScienceCamera):
         
         These values are encapsulated in this.FULL, this.HALF, this.QUARTER, ...etc
         """
+        print "set_roi"
         self.sock.send(SET_ROI + chr(roi_enum))
         self.sock.recv(4)
 

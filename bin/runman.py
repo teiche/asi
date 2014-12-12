@@ -6,6 +6,19 @@ import xmlrpclib
 import asi
 from asi.manager import RunManager
 
+from SimpleXMLRPCServer import SimpleXMLRPCServer, SimpleXMLRPCRequestHandler
+
+import asi
+from asi.scheduler import InOrderScheduler, WeightedSingleScheduler
+from asi.utils.xmlrpc import RequestHandler
+
+server = SimpleXMLRPCServer(("localhost", 7279),
+                            requestHandler=RequestHandler,
+                            logRequests=False,
+                            allow_none=True)
+server.timeout = .001
+server.register_introspection_functions()
+
 asi.log.init_logging("runman.log")
 
 logger = logging.getLogger(__name__)
@@ -55,10 +68,26 @@ try:
 except socket.error:
     logger.critical("Could not connect to acquisition camera")
     sys.exit()
+
+try:
+    platesolve = asi.client.PlateSolve()
+    logger.info("Connected to plate solving engine: " + platesolve.name())
+except socket.error:
+    logger.critical("Could not connect to plate solving engine")
+    sys.exit()
     
-rm = RunManager(scheduler, telescope, slider, focuser, science_cam, acquisition_cam)
+rm = RunManager(server,
+                scheduler, 
+                telescope, 
+                slider, 
+                focuser, 
+                science_cam, 
+                acquisition_cam, 
+                platesolve)
+rm.register_xmlrpc_functions(server)
 
 while 1:
+    server.handle_request()
     rm.update()
 
 logger.info("Goodbye!")

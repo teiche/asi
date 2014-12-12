@@ -40,14 +40,14 @@ def nullfail(func):
     """
     def f(x):
         try:
-            return f(x)
+            return func(x)
 
         except:
             return None
 
     return f
 
-nfloat = nullfail(float)
+nfloat = nullfail(lambda q: float(q.strip()))
 nint   = nullfail(int)    
 
 def ra2deg(ra):
@@ -58,9 +58,9 @@ def ra2deg(ra):
     return 15.0*hr + mn/4.0 + sc/240.0
 
 def dec2deg(dec):
-    deg = float(dec[0:2])
-    mn = float(dec[2:4])
-    sc = float(dec[4:])
+    deg = float(dec[0:3])
+    mn = float(dec[3:5])
+    sc = float(dec[5:])
 
     return deg + mn/60.0 + sc/3600.0
 
@@ -112,7 +112,7 @@ if __name__ == '__main__':
         dnum = line[98:106].strip()
         notes = line[107:111].strip()
         acoord = line[112:130].strip()
-        
+
         # Calculate decimal equivalents of RA and Dec
         # Easier to query
         try:

@@ -23,7 +23,7 @@ class ASCOMTelescope(AbstractTelescope):
         cur_dec = self.com.Declination
         
         # Convert ra back to degrees for slew_abs
-        self.slew_abs((ra * 15.0) + cur_ra, dec + cur_dec)
+        self.slew_abs((cur_ra * 15.0) + ra, dec + cur_dec)
 
         super(ASCOMTelescope, self).slew_rel(ra, dec)
 

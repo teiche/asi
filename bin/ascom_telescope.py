@@ -18,7 +18,7 @@ server.register_introspection_functions()
 telescope = SiTechTelescope()
 telescope.register_xmlrpc_functions(server)
     
-print "Telescope Simulator Running..."
+print "ASCOM Telescope Host Running..."
 
 while 1:
     telescope.update()

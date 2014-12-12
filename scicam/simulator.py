@@ -27,3 +27,9 @@ class ScienceCameraSimulator(AbstractScienceCamera):
 
     def get_roi(self):
         return (1024, 1024)
+
+    def autoexpose(self):
+        return True
+
+    def quit(self):
+        return True

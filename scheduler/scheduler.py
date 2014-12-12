@@ -1,18 +1,28 @@
 import functools
 import logging
+import datetime
+import math
 
 logger = logging.getLogger(__name__)
 
 from SimpleXMLRPCServer import SimpleXMLRPCServer, SimpleXMLRPCRequestHandler
 
+import ephem
+
 from .. import db
 from ..db.catalog import DoubleStar, ReferenceStar
+from ..db.runlog import Observation
 from ..db.targetlist import Target
 
 from ..utils.xmlrpc import RPCAble, rpc_method
 from ..utils import astro
 
 import errors
+
+moon = ephem.Moon()
+site = ephem.Observer()
+site.lon = "120:39:00"
+site.lat = "35:18:03"
 
 class AbstractScheduler(RPCAble):
     """
@@ -52,6 +62,9 @@ class AbstractScheduler(RPCAble):
 
         # This is the star we are currently observing
         self.current = None
+
+        # Singles that have failed
+        self.blacklisted_singles = []
 
         #self._xmlrpc_funcs = (self.get_next_target, self.target_failed, self.target_success)
 
@@ -109,7 +122,7 @@ class AbstractScheduler(RPCAble):
         In the case of a single, a new single is found
         """
         if isinstance(self.current[0], ReferenceStar):
-            # TODO Make sure we skip the one we already tried
+            self.blacklisted_singles.append(self.current[0])
             self.single = self.get_next_single_star(self.successful_doubles)
 
     @rpc_method
@@ -207,6 +220,9 @@ class AbstractScheduler(RPCAble):
             ReferenceStar.dec_deg >= dec_range[0],
             ReferenceStar.dec_deg <= dec_range[1]).all()
 
+        # Remove all blacklisted singles
+        singles = filter(lambda s: s not in self.blacklisted_singles, singles)
+
         if len(singles) == 0:
             # If we couldn't find any single stars close enough, widen the search
             logger.warning("No single stars were found within {ra} degrees RA and {dec} degrees Dec of double star {dbl}.".format(
@@ -297,3 +313,96 @@ class InOrderScheduler(AbstractScheduler):
     def reset(self):
         self.targets = self.session.query(Target).all()
         super(InOrderScheduler, self).reset()
+
+class WeightedSingleScheduler(AbstractScheduler):
+    HOUR_ANGLE_WEIGHT = 1
+    DISTANCE_WEIGHT = 10
+    MOON_DIST_WEIGHT = 2
+    TIME_DELTA_WEIGHT = 15
+
+    CLOSEST_MOON_DIST = 5 #degrees
+    
+    def __init__(self, telescope):
+        super(WeightedSingleScheduler, self).__init__()        
+
+        self.targets = self.session.query(Target).all()
+
+        print self.targets
+
+        self.telescope = telescope
+
+        # XMLRPC is quite slow on windows, so only get this data once per
+        # set of cost calculations
+        self.tele_ra, self.tele_dec = self.telescope.get_pos()
+        #self.tele_ra = self.tele_dec = 0
+
+        # Maps targets to the last time they were scheduled, regardless of whether or not
+        # they were observed
+        # { target : datetime }
+        self.scheduled_time = {}
+
+    def _get_next_target_group(self):
+        self.tele_ra, self.tele_dec = self.telescope.get_pos()
+    
+        target = min(self.targets, key=self.cost)
+
+        self.scheduled_time[target] = datetime.datetime.now()
+        
+        return [target]
+
+    @rpc_method
+    def reset(self):
+        self.scheduled_time = {}
+
+    def cost(self, target):
+        """
+        Calculate the cost of a target
+        The target with the lowest cost within horizon limits is chosen
+        """
+        # Set this to a very high number to make a target excluded
+        # e.g. below horizon or too close to moon
+        adjust = 0
+        
+        # Hour-angle
+        ha = abs(target.star.ra_deg - ephem.degrees(site.sidereal_time()))        
+
+        # Distance from current position
+
+        tele_dist = math.sqrt(((target.star.ra_deg - self.tele_ra) ** 2) + (target.star.dec_deg - self.tele_dec) ** 2)
+
+        # Time since last observation
+        last_obs_time = self.scheduled_time.get(target, None)
+        if not last_obs_time:
+            #last_obs_time =  self.session.query(Observation).filter_by(star_id=target.star_id).order_by("datetime").all()
+            last_obs_time = []
+
+            if last_obs_time:
+                last_obs_time = last_obs_time[0].datetime
+                
+        if last_obs_time:
+            hours = 2000. / (((datetime.datetime.now() - last_obs_time).total_seconds()))
+
+        else:
+            hours = 0
+        
+        # Distance from moon
+        moon.compute()
+        moon_dist = math.sqrt(((target.star.ra_deg - ephem.degrees(moon.a_ra)) ** 2) + \
+                               (target.star.dec_deg - moon.a_dec) ** 2)
+
+        print "dist", tele_dist
+        print "hours", hours
+        print 'ha', ha
+        print 'moon_dist', moon_dist
+        print
+                               
+        if moon_dist < self.CLOSEST_MOON_DIST:
+            adjust = 2**32
+
+        
+        cost = (tele_dist * self.DISTANCE_WEIGHT) + \
+               (hours     * self.TIME_DELTA_WEIGHT) + \
+               (moon_dist * self.MOON_DIST_WEIGHT) + \
+               (ha        * self.HOUR_ANGLE_WEIGHT)
+
+        return cost

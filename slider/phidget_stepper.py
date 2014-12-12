@@ -33,15 +33,15 @@ class PhidgetStepperSlider(AbstractSlider):
 
         logger.info("Waiting for Phidget to attach...")
         try:
-            self.stepper.waitForAttach()
-        except PhidgetError as e:
+            self.stepper.waitForAttach(1000)
+        except PhidgetException as e:
             logger.error("Could not wait for Phidget to attach: {e}".format(e=e.details))
             sys.exit(1)
 
         logger.info("Successfully connected to Phidget stepper driver.")
         logger.info("    Device Name: " + self.stepper.getDeviceName())
-        logger.info("    Serial Number: " + self.stepper.getSerialNum())
-        logger.info("    Device Version: " + self.stepper.getDeviceVersion())
+        logger.info("    Serial Number: " + str(self.stepper.getSerialNum()))
+        logger.info("    Device Version: " + str(self.stepper.getDeviceVersion()))
                 
         # Assume the slider is currently at the acquisition camera
         self.stepper.setCurrentPosition(config.slider_motor_id, config.slider_acquis_pos)
@@ -63,7 +63,7 @@ class PhidgetStepperSlider(AbstractSlider):
         self._set_target(config.slider_sci_pos)
 
     def get_pos(self):
-        pos = self.stepper.getCurrentPosition()
+        pos = self.stepper.getCurrentPosition(0)
         
         if pos == config.slider_acquis_pos:
             return self.ACQUISITOIN
@@ -75,7 +75,7 @@ class PhidgetStepperSlider(AbstractSlider):
             return self.MOVING
 
     def ready(self):
-        return self.target == self.stepper.getCurrentPosition()
+        return self.target == self.stepper.getCurrentPosition(0)
         
     
 

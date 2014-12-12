@@ -10,11 +10,13 @@ TABLE_NAME_MAP = {
     'DoubleStar' : DoubleStar,
     }
     
-SCHEDULER_DEFAULT_ADDR = config.scheduler_addr
-TELESCOPE_DEFAULT_ADDR = config.telescope_addr
-SLIDER_DEFAULT_ADDR    = config.slider_addr
-SCICAM_DEFAULT_ADDR    = config.scicam_addr
-ACQUISCAM_DEFAULT_ADDR = config.acquiscam_addr
+SCHEDULER_DEFAULT_ADDR  = config.scheduler_addr
+TELESCOPE_DEFAULT_ADDR  = config.telescope_addr
+SLIDER_DEFAULT_ADDR     = config.slider_addr
+SCICAM_DEFAULT_ADDR     = config.scicam_addr
+ACQUISCAM_DEFAULT_ADDR  = config.acquiscam_addr
+PLATESOLVE_DEFAULT_ADDR = config.platesolve_addr
+RUNMAN_DEFAULT_ADDR     = config.runman_addr
 
 
 """
@@ -44,6 +46,7 @@ class Telescope(RPCClientOverloadWrapper):
 
         self.slew_abs(star.ra_deg, star.dec_deg)
 
+'''
 class AcquisitionCamera(RPCClientOverloadWrapper):
     def __init__(self, hostname=ACQUISCAM_DEFAULT_ADDR):
         super(AcquisitionCamera, self).__init__(hostname)
@@ -54,7 +57,7 @@ class AcquisitionCamera(RPCClientOverloadWrapper):
         
     def plate_solve(self, ra, dec):
         self._rpc.plate_solve(ra, dec)
-        
+'''     
 # The rest are vanilla XMLRPC instance, so configure them in a sane manner then pass off it on
 def _make_xmlrpc_connection(addr):
     return xmlrpclib.ServerProxy(addr, allow_none=True)
@@ -70,7 +73,12 @@ def Slider(addr=SLIDER_DEFAULT_ADDR):
 def ScienceCamera(addr=SCICAM_DEFAULT_ADDR):
     return _make_xmlrpc_connection(addr)
 
-'''
 def AcquisitionCamera(addr=ACQUISCAM_DEFAULT_ADDR):
     return _make_xmlrpc_connection(addr)
-'''
+
+def PlateSolve(addr=PLATESOLVE_DEFAULT_ADDR):
+    return _make_xmlrpc_connection(addr)
+
+
+def RunManager(addr=RUNMAN_DEFAULT_ADDR):
+    return _make_xmlrpc_connection(addr)

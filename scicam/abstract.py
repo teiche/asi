@@ -13,7 +13,7 @@ class AbstractScienceCamera(RPCAble):
                            self.start_acquisition, self.abort, self.get_progress, 
                            self.get_kinetic_series_length, self.get_avg_well_fill,
                            self.set_kinetic_series_length, self.set_itime, self.set_gain,
-                           self.set_roi]
+                              self.set_roi, self.autoexpose, self.quit]
 
         print self._xmlrpc_funcs
         

@@ -5,6 +5,7 @@ logger = logging.getLogger(__name__)
 import sqlalchemy
 from sqlalchemy.orm import sessionmaker
 
+#DB_ADDR_STRING = 'mysql+mysqlconnector://root:SpeckleData1029@localhost:3306/speckle'
 DB_ADDR_STRING = 'mysql+mysqlconnector://speckle_user:lebenswelt@localhost:3306/speckle'
 
 logger.info("Connecting to database at " + DB_ADDR_STRING)

@@ -2,9 +2,16 @@ import ConfigParser
 
 config = ConfigParser.SafeConfigParser()
 
-log = config.read(('/home/alex/speckle/asi/conf/alex_linux.conf',
-'C:/Users/alex/asi/conf/alex_win7.conf', '.\conf\alex_win7.conf',
-'/Users/amddude/asi/conf/james_osx.conf'))
+#log = config.read((r'C:\Users\Russ\asi\conf\alex_linux.conf'))
+'''
+'/home/alex/speckle/asi/conf/alex_linux.conf',
+'C:/Users/alex/Desktop/asi/conf/alex_win7.conf', '.\conf\alex_win7.conf',
+                   '/Users/amddude/asi/conf/james_osx.conf', 'C:\Users\Russ\asi\conf\alex_win7_.conf'))
+'''
+print 'conf'
+log = config.read('/home/alex/speckle/asi/conf/alex_linux.conf')
+
+print "Using log file: ", log
 
 print "Using log file: ", log
 
@@ -18,6 +25,8 @@ telescope_addr = config.get('RPC', 'telescope_addr')
 slider_addr = config.get('RPC', 'slider_addr')
 scicam_addr = config.get('RPC', 'scicam_addr')
 acquiscam_addr = config.get('RPC', 'acquiscam_addr')
+platesolve_addr = config.get('RPC', 'platesolve_addr')
+runman_addr = config.get('RPC', 'runman_addr')
 
 # Filters
 # Create a dictionary of filter : filter wheel index pairs, starting a 0
@@ -39,6 +48,8 @@ scicam_y = int(config.get('Acquisition', 'scicam_y'))
 # The maximum distance(in degrees) that the target can be from the center of field
 ra_err = float(config.get('Acquisition', 'ra_err'))
 dec_err = float(config.get('Acquisition', 'dec_err'))
+acquiscam_tempdir = config.get('Acquisition', 'tempdir')
+acquiscam_tempfile = config.get('Acquisition', 'tempfile')
     
 # Slider
 slider_motor_id = int(config.get('Slider', 'motor_id'))

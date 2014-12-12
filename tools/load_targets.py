@@ -5,6 +5,9 @@ from asi.db.catalog import DoubleStar
 from asi.db.targetlist import Target
 from asi import config
 
+# Raise an error if multiple stars are found with the same identifier
+# If this is set to false, the first star found is used
+ERROR_MULTIPLE = False
 
 def fetch_double(session, name, cat=None):
     if cat:
@@ -47,7 +50,7 @@ if __name__ == '__main__':
             print "ERROR({l}): In double {dbl}, the filter band {filt} is not supported.  Target skipped...".format(l=i, dbl=name, filt=band)
             
         dbl = fetch_double(session, name, cat)
-        if len(dbl) > 1:
+        if (len(dbl) > 1) and ERROR_MULTIPLE:
             print "ERROR({l}): More than one double matches {dbl}".format(l=i, dbl=name)
             print "    ", line
             print "     The following doubles all match:"

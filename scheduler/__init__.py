@@ -1,1 +1,1 @@
-from scheduler import RandomScheduler, InOrderScheduler
+from scheduler import RandomScheduler, InOrderScheduler, WeightedSingleScheduler
